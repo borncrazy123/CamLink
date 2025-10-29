@@ -6,5 +6,152 @@
 </head>
 <body>
     <h1>欢迎使用 Flask!</h1>
+    <h2>设备接入管理</h2>
+    <table border="1" style="width:100%;text-align:center;">
+        <thead>
+            <tr>
+                <th>选中</th>
+                <th>ClientID</th>
+                <th>酒店名</th>
+                <th>设备编号</th>
+                <th>电量</th>
+                <th>容量</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 示例数据，可替换为后端渲染 -->
+            <tr>
+                <td><input type="checkbox" /></td>
+                <td><a href="#" class="clientid-link" data-clientid="client001">client001</a></td>
+                <td>凯悦酒店</td>
+                <td>DEV-1001</td>
+                <td>80%</td>
+                <td>5000mAh</td>
+                <td>
+                    <button>启动</button>
+                    <button>停止</button>
+                    <button>上传</button>
+                </td>
+            </tr>
+            <tr>
+                <td><input type="checkbox" /></td>
+                <td><a href="#" class="clientid-link" data-clientid="client002">client002</a></td>
+                <td>希尔顿酒店</td>
+                <td>DEV-1002</td>
+                <td>65%</td>
+                <td>4000mAh</td>
+                <td>
+                    <button>启动</button>
+                    <button>停止</button>
+                    <button>上传</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <!-- 抽屉面板 -->
+    <div id="drawer" style="position:fixed;top:0;right:-1000px;width:800px;height:100%;background:#fff;box-shadow:-2px 0 8px rgba(0,0,0,0.2);transition:right 0.3s;z-index:1000;padding:24px;text-align:left;">
+        <button onclick="closeDrawer()" style="float:right;">关闭</button>
+        <h3>设备详细信息</h3>
+        <div id="drawer-content">
+            <!-- 详细信息内容 -->
+        </div>
+        <h4 style="margin-top:32px;">任务执行状态列表</h4>
+        <table border="1" style="width:100%;text-align:center;">
+            <thead>
+                <tr>
+                    <th>行为</th>
+                    <th>任务ID</th>
+                    <th>执行时间</th>
+                    <th>响应时间</th>
+                    <th>响应状态</th>
+                    <th>错误信息</th>
+                </tr>
+            </thead>
+            <tbody id="task-table-body">
+                <!-- 任务数据由JS动态填充 -->
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <script>
+        // 示例数据
+        const deviceDetails = {
+            'client001': {
+                clientid: 'client001',
+                hotel: '凯悦酒店',
+                deviceNo: 'DEV-1001',
+                battery: '80%',
+                capacity: '5000mAh',
+                status: '在线',
+                lastUpload: '2025-10-28 14:23:00'
+            },
+            'client002': {
+                clientid: 'client002',
+                hotel: '希尔顿酒店',
+                deviceNo: 'DEV-1002',
+                battery: '65%',
+                capacity: '4000mAh',
+                status: '离线',
+                lastUpload: '2025-10-27 09:10:00'
+            }
+        };
+        function openDrawer(clientid) {
+            const drawer = document.getElementById('drawer');
+            const content = document.getElementById('drawer-content');
+            const info = deviceDetails[clientid];
+            if (info) {
+                content.innerHTML = `
+                    <div style="font-size:14px;line-height:1.4;">
+                        <div style="display:flex;gap:16px;margin-bottom:4px;">
+                            <div><strong>ClientID:</strong> ${info.clientid}</div>
+                            <div><strong>酒店名:</strong> ${info.hotel}</div>
+                        </div>
+                        <div style="display:flex;gap:16px;margin-bottom:4px;">
+                            <div><strong>设备编号:</strong> ${info.deviceNo}</div>
+                            <div><strong>电量:</strong> ${info.battery}</div>
+                        </div>
+                        <div style="display:flex;gap:16px;margin-bottom:4px;">
+                            <div><strong>容量:</strong> ${info.capacity}</div>
+                            <div><strong>状态:</strong> ${info.status}</div>
+                        </div>
+                        <div style="display:flex;gap:16px;margin-bottom:4px;">
+                            <div><strong>最后上传时间:</strong> ${info.lastUpload}</div>
+                        </div>
+                    </div>
+                `;
+                // 示例任务数据
+                const taskList = [
+                    { action: '启动', taskId: 'T001', execTime: '2025-10-29 10:00:01', respTime: '2025-10-29 10:00:02', status: 'done', error: '' },
+                    { action: '上传', taskId: 'T002', execTime: '2025-10-29 10:05:10', respTime: '2025-10-29 10:05:12', status: 'calling', error: '' },
+                    { action: '停止', taskId: 'T003', execTime: '2025-10-29 10:10:00', respTime: '2025-10-29 10:10:01', status: 'failed', error: '设备离线' }
+                ];
+                const tbody = document.getElementById('task-table-body');
+                tbody.innerHTML = taskList.map(t => `
+                    <tr>
+                        <td>${t.action}</td>
+                        <td>${t.taskId}</td>
+                        <td>${t.execTime}</td>
+                        <td>${t.respTime}</td>
+                        <td>${t.status}</td>
+                        <td>${t.error}</td>
+                    </tr>
+                `).join('');
+            } else {
+                content.innerHTML = '<p>未找到详细信息</p>';
+                document.getElementById('task-table-body').innerHTML = '';
+            }
+            drawer.style.right = '0';
+        }
+        function closeDrawer() {
+            document.getElementById('drawer').style.right = '-1000px';
+        }
+        document.querySelectorAll('.clientid-link').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                openDrawer(this.dataset.clientid);
+            });
+        });
+    </script>
 </body>
 </html>
