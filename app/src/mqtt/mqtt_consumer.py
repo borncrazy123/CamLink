@@ -12,8 +12,8 @@ def create_mqtt_consumer():
     client_id = f'python-mqtt-server-{random.randint(0, 1000)}'
     # client_id = 'python-mqtt-server-123'
     # 如果 broker 需要鉴权，设置用户名密码
-    username = 'camlink'
-    password = 'camlink'
+    username = 'camlink_s_1'
+    password = 'camlink_s_1'
 
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
