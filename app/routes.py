@@ -8,6 +8,14 @@ main = Blueprint('main', __name__)
 def home():
     return render_template('index.html')
 
+@main.route('/camera_config')
+def camera_config():
+    return render_template('camera_config.html')
+
+@main.route('/device_manage')
+def device_manage():
+    return render_template('device_manage.html')
+
 @main.route('/hello')
 def hello():
     return "Hello, World!"

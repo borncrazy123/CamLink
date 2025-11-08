@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>摄像头配置生成</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { background: #f5f7fa; }
+        .container { display: flex; justify-content: center; align-items: flex-start; min-height: 90vh; gap: 32px; }
+        .form-card { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 32px 24px; width: 400px; }
+        .form-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { font-size: 15px; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .form-input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f6f7fa; font-size: 15px; }
+        .form-input:focus { outline: none; border-color: #1976d2; background: #fff; }
+        .form-desc { color: #b0b3b8; font-size: 13px; margin-top: 2px; }
+        .form-divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+        .form-btn { width: 100%; background: #0a0a23; color: #fff; font-size: 16px; font-weight: 600; border: none; border-radius: 8px; padding: 12px 0; cursor: pointer; margin-top: 12px; }
+        .form-btn:hover { background: #1976d2; }
+        .preview-card { background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 32px 24px; width: 400px; min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .preview-icon { font-size: 60px; color: #b0b3b8; margin-bottom: 16px; }
+        .preview-desc { color: #7a7a7a; font-size: 16px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-card">
+            <div class="form-title">摄像头配置信息</div>
+            <form id="configForm">
+                <div class="form-group">
+                    <div class="form-label"># 硬件识别编号</div>
+                    <input class="form-input" type="text" name="hardware_id" placeholder="例如: HW-2024-001" required>
+                </div>
+                <div class="form-group">
+                    <div class="form-label"><span style="font-size:18px;">&#128188;</span> 所属酒店名称</div>
+                    <input class="form-input" type="text" name="hotel_name" placeholder="例如: 北京希尔顿酒店" required>
+                </div>
+                <hr class="form-divider">
+                <div class="form-group">
+                    <div class="form-label"><span style="font-size:18px;">&#128246;</span> WiFi 网络配置</div>
+                </div>
+                <div class="form-group">
+                    <div class="form-label">WiFi 名称 (SSID)</div>
+                    <input class="form-input" type="text" name="wifi_ssid" placeholder="例如: Hotel-IoT-Network" required>
+                </div>
+                <div class="form-group">
+                    <div class="form-label">WiFi 密码</div>
+                    <input class="form-input" type="password" name="wifi_password" placeholder="输入WiFi密码" required>
+                </div>
+                <button type="submit" class="form-btn">生成配置</button>
+            </form>
+        </div>
+        <div class="preview-card" id="previewCard">
+            <div class="preview-icon">&#128247;</div>
+            <div class="preview-desc">填写左侧表单信息后<br>将自动生成二维码和配置文件</div>
+        </div>
+    </div>
+    <script>
+        // 仅前端交互示例，二维码和配置文件生成可后续补充
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(this));
+            const preview = document.getElementById('previewCard');
+            preview.innerHTML = `<div style='font-size:60px;color:#1976d2;margin-bottom:16px;'>&#128247;</div>
+                <div style='font-size:17px;font-weight:500;margin-bottom:12px;'>已生成配置</div>
+                <div style='background:#f6f7fa;border-radius:8px;padding:16px 12px;margin-bottom:16px;'>
+                    <div><strong>硬件编号:</strong> ${data.hardware_id}</div>
+                    <div><strong>酒店名称:</strong> ${data.hotel_name}</div>
+                    <div><strong>WiFi SSID:</strong> ${data.wifi_ssid}</div>
+                    <div><strong>WiFi密码:</strong> ${data.wifi_password}</div>
+                </div>
+                <div style='color:#7a7a7a;font-size:15px;'>二维码和配置文件功能可后续补充</div>`;
+        });
+    </script>
+</body>
+</html>
