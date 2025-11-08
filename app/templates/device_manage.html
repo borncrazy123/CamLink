@@ -4,7 +4,7 @@
     <title>摄像头管理中心</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        body { background: #f5f7fa; }
+        body { background: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
         .main-container { max-width: 1400px; margin: 0 auto; padding: 32px 0; }
         .header { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
         .header-logo { font-size: 32px; color: #1976d2; }
@@ -29,324 +29,891 @@
         .status-online { background: #2ecc40; }
         .status-offline { background: #b0b3b8; }
         .status-error { background: #ff3b30; }
-        .icon-btn { background: none; border: none; cursor: pointer; font-size: 20px; margin: 0 4px; color: #222; }
-        .icon-btn:hover { color: #1976d2; }
+        .status-recording { background: #ff9500; }
+        .icon-btn { background: none; border: none; cursor: pointer; font-size: 20px; margin: 0 4px; color: #222; transition: all 0.2s; }
+        .icon-btn:hover { color: #1976d2; transform: scale(1.1); }
+        .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
         .device-icon { font-size: 18px; color: #1976d2; margin-right: 4px; }
         .location-icon { font-size: 16px; color: #1976d2; margin-right: 4px; }
+
+        /* Toast notification */
+        .toast { position: fixed; top: 20px; right: 20px; background: #fff; padding: 16px 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; z-index: 3000; min-width: 280px; }
+        .toast.show { display: block; animation: slideIn 0.3s ease-out; }
+        .toast.success { border-left: 4px solid #2ecc40; }
+        .toast.error { border-left: 4px solid #ff3b30; }
+        .toast.info { border-left: 4px solid #1976d2; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
 
         /* Modal styles */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 2000; }
         .modal { background: #fff; width: 520px; max-height: 86vh; overflow: hidden; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+        .modal.large { width: 720px; }
         .modal-header { padding: 18px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; }
         .modal-title { font-size:18px; font-weight:700; display:flex; gap:10px; align-items:center }
-        .modal-body { padding: 16px 18px; overflow:auto; }
-        .detail-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px 12px; font-size:14px; color:#333; }
-        .detail-label { color:#7a7a7a; font-size:13px; }
-        .actions-row { display:flex; gap:10px; padding:12px 18px; border-top:1px solid #f5f5f5; }
-        .action-btn { padding:8px 14px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; }
-        .action-btn.primary { background:#0a0a23; color:#fff; border-color:transparent; }
-        .tabs { display:flex; gap:8px; margin-top:14px; border-radius:8px; background:#f5f7fa; padding:6px; }
-        .tab { padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; color:#6b7280 }
-        .tab.active { background:#fff; color:#111; box-shadow: 0 1px 0 rgba(0,0,0,0.04); }
-        .timeline { margin-top:12px; max-height:260px; overflow:auto; padding-right:8px; }
-        .timeline-item { padding:12px 8px; border-left:3px solid #e6eef6; margin-left:8px; margin-bottom:12px; position:relative; }
-        .timeline-item .dot { width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px; }
-        .dot.green { background:#2ecc40 }
-        .dot.blue { background:#3b82f6 }
-        .timeline-time { position:absolute; right:8px; top:12px; color:#94a3b8; font-size:12px; }
+        .modal-body { padding: 16px 18px; overflow:auto; max-height: 60vh; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; font-size: 14px; }
+        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .form-input:focus { outline: none; border-color: #1976d2; }
         .close-x { background:none;border:none;font-size:18px;cursor:pointer;color:#6b7280 }
-        .modal-footer { padding: 10px 18px; border-top:1px solid #f0f0f0; text-align:right; }
+        .modal-footer { padding: 10px 18px; border-top:1px solid #f0f0f0; text-align:right; display: flex; gap: 10px; justify-content: flex-end; }
+        .btn { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-primary { background: #1976d2; color: #fff; }
+        .btn-primary:hover { background: #1565c0; }
+        .btn-secondary { background: #e5e7eb; color: #333; }
+        .btn-secondary:hover { background: #d1d5db; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Video list */
+        .video-item { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .video-item.selected { background: #e3f2fd; border-color: #1976d2; }
+        .video-info { flex: 1; }
+        .video-name { font-weight: 600; color: #333; margin-bottom: 4px; }
+        .video-meta { font-size: 13px; color: #6b7280; }
+        .video-checkbox { width: 18px; height: 18px; cursor: pointer; }
+        .progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; background: #2ecc40; transition: width 0.3s; }
+        .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid #1976d2; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Device table row hover */
+        .device-table tbody tr { cursor: pointer; transition: background 0.2s; }
+        .device-table tbody tr:hover { background: #f5f7fa; }
+        
+        /* Timeline items */
+        .timeline-item { padding: 12px; border-left: 3px solid #e5e7eb; margin-left: 8px; margin-bottom: 12px; position: relative; }
+        .timeline-item.success { border-left-color: #2ecc40; }
+        .timeline-item.info { border-left-color: #1976d2; }
+        .timeline-item.warning { border-left-color: #ff9500; }
+        .timeline-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .timeline-dot.green { background: #2ecc40; }
+        .timeline-dot.blue { background: #1976d2; }
+        .timeline-dot.orange { background: #ff9500; }
+        .timeline-time { position: absolute; right: 8px; top: 12px; color: #6b7280; font-size: 12px; }
+        .timeline-title { font-weight: 600; margin-bottom: 6px; color: #333; }
+        .timeline-desc { color: #6b7280; font-size: 14px; }
+        
+        /* File list items */
+        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; transition: all 0.2s; }
+        .file-item:hover { background: #f5f7fa; border-color: #1976d2; }
+        .file-icon { font-size: 24px; margin-right: 12px; }
+        .file-info { flex: 1; }
+        .file-name { font-weight: 600; color: #333; margin-bottom: 4px; }
+        .file-meta { font-size: 13px; color: #6b7280; }
+        .file-actions { display: flex; gap: 8px; }
+        .file-action-btn { background: none; border: none; cursor: pointer; font-size: 20px; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }
+        .file-action-btn:hover { background: #e5e7eb; }
     </style>
 </head>
 <body>
     <div class="main-container">
         <div class="header">
-            <span class="header-logo">&#128246;</span>
+            <span class="header-logo">📷</span>
             <span class="header-title">摄像头管理中心</span>
             <span class="header-sub">MQTT 设备监控与管理</span>
+            <button onclick="refreshDeviceList()" style="margin-left: auto; padding: 8px 16px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer;">🔄 刷新</button>
         </div>
         <div class="stats-row">
             <div class="stat-card">
                 <div class="stat-label">总设备数</div>
-                <div class="stat-value">5 <span class="stat-icon">&#128247;</span></div>
+                <div class="stat-value" id="totalDevices">0 <span class="stat-icon">📷</span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">在线设备</div>
-                <div class="stat-value"><span class="stat-dot online"></span>3</div>
+                <div class="stat-value"><span class="stat-dot online"></span><span id="onlineDevices">0</span></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">离线设备</div>
-                <div class="stat-value"><span class="stat-dot offline"></span>1</div>
+                <div class="stat-value"><span class="stat-dot offline"></span><span id="offlineDevices">0</span></div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">故障设备</div>
-                <div class="stat-value"><span class="stat-dot error"></span>1</div>
+                <div class="stat-label">录制中</div>
+                <div class="stat-value"><span class="stat-dot error"></span><span id="recordingDevices">0</span></div>
             </div>
         </div>
         <div class="search-bar">
-            <input class="search-input" type="text" placeholder="搜索酒店名称、硬件编号或位置...">
+            <input class="search-input" type="text" placeholder="搜索摄像头ID...">
         </div>
         <table class="device-table">
             <thead>
                 <tr>
                     <th>状态</th>
-                    <th>硬件编号</th>
-                    <th>所属酒店</th>
-                    <th>安装位置</th>
-                    <th>WiFi网络</th>
-                    <th>运行时长</th>
-                    <th>最后在线</th>
+                    <th>摄像头ID</th>
+                    <th>运行状态</th>
+                    <th>剩余容量</th>
+                    <th>电量</th>
+                    <th>信号强度</th>
+                    <th>最后更新</th>
                     <th>操作</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="deviceTableBody">
                 <tr>
-                    <td><span class="status-tag status-online">在线</span></td>
-                    <td><span class="device-icon">&#128247;</span>HW-2024-001</td>
-                    <td>北京希尔顿酒店</td>
-                    <td><span class="location-icon">&#128205;</span>大堂入口</td>
-                    <td>Hotel-IoT-Network</td>
-                    <td>15天 8小时</td>
-                    <td>11/8 08:46</td>
-                    <td>
-                        <button class="icon-btn" title="启动">&#9654;</button>
-                        <button class="icon-btn" title="停止">&#9632;</button>
-                        <button class="icon-btn" title="文件">&#128194;</button>
-                        <button class="icon-btn" title="分享">&#128257;</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><span class="status-tag status-online">在线</span></td>
-                    <td><span class="device-icon">&#128247;</span>HW-2024-002</td>
-                    <td>北京希尔顿酒店</td>
-                    <td><span class="location-icon">&#128205;</span>电梯厅 - 2F</td>
-                    <td>Hotel-IoT-Network</td>
-                    <td>15天 8小时</td>
-                    <td>11/8 08:46</td>
-                    <td>
-                        <button class="icon-btn" title="启动">&#9654;</button>
-                        <button class="icon-btn" title="停止">&#9632;</button>
-                        <button class="icon-btn" title="文件">&#128194;</button>
-                        <button class="icon-btn" title="分享">&#128257;</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><span class="status-tag status-offline">离线</span></td>
-                    <td><span class="device-icon">&#128247;</span>HW-2024-003</td>
-                    <td>上海香格里拉酒店</td>
-                    <td><span class="location-icon">&#128205;</span>停车场入口</td>
-                    <td>Hotel-Shanghai-IoT</td>
-                    <td>0天 0小时</td>
-                    <td>11/8 07:46</td>
-                    <td>
-                        <button class="icon-btn" title="启动">&#9654;</button>
-                        <button class="icon-btn" title="停止">&#9632;</button>
-                        <button class="icon-btn" title="文件">&#128194;</button>
-                        <button class="icon-btn" title="分享">&#128257;</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><span class="status-tag status-error">故障</span></td>
-                    <td><span class="device-icon">&#128247;</span>HW-2024-004</td>
-                    <td>广州万豪酒店</td>
-                    <td><span class="location-icon">&#128205;</span>餐厅区域</td>
-                    <td>Hotel-GZ-IoT</td>
-                    <td>2天 3小时</td>
-                    <td>11/8 06:46</td>
-                    <td>
-                        <button class="icon-btn" title="启动">&#9654;</button>
-                        <button class="icon-btn" title="停止">&#9632;</button>
-                        <button class="icon-btn" title="文件">&#128194;</button>
-                        <button class="icon-btn" title="分享">&#128257;</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><span class="status-tag status-online">在线</span></td>
-                    <td><span class="device-icon">&#128247;</span>HW-2024-005</td>
-                    <td>深圳洲际酒店</td>
-                    <td><span class="location-icon">&#128205;</span>会议室走廊</td>
-                    <td>Hotel-SZ-IoT</td>
-                    <td>30天 12小时</td>
-                    <td>11/8 08:46</td>
-                    <td>
-                        <button class="icon-btn" title="启动">&#9654;</button>
-                        <button class="icon-btn" title="停止">&#9632;</button>
-                        <button class="icon-btn" title="文件">&#128194;</button>
-                        <button class="icon-btn" title="分享">&#128257;</button>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">
+                        <div class="loading" style="margin: 0 auto 10px;"></div>
+                        <div>加载设备列表中...</div>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <!-- 设备详情模态 -->
-    <div id="modalOverlay" class="modal-overlay">
-        <div class="modal" role="dialog" aria-modal="true">
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 设备详情模态框 -->
+    <div id="deviceDetailModal" class="modal-overlay">
+        <div class="modal large">
             <div class="modal-header">
-                <div class="modal-title"><span style="font-size:20px">&#128247;</span> 摄像头详情 - <span id="modalHardwareId">-</span></div>
-                <button class="close-x" id="closeModal">✕</button>
+                <div class="modal-title">📷 摄像头详情 - <span id="detailCameraId"></span></div>
+                <button class="close-x" onclick="closeModal('deviceDetailModal')">✕</button>
             </div>
             <div class="modal-body">
-                <div class="detail-grid">
-                    <div class="detail-label">状态</div><div id="d_status"></div>
-                    <div class="detail-label">客户端ID</div><div id="d_clientid"></div>
-                    <div class="detail-label">所属酒店</div><div id="d_hotel" ></div>
-                    <div class="detail-label">安装位置</div><div id="d_location"></div>
-
-                    <div class="detail-label">WiFi网络</div><div id="d_wifi"></div>
-                    <div class="detail-label">运行时长</div><div id="d_runtime"></div>
-                    <div class="detail-label">固件版本</div><div id="d_fw"></div>
-                    <div class="detail-label">最后在线</div><div id="d_lastonline"></div>
+                <!-- 设备信息网格 -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 16px; margin-bottom: 20px; padding: 16px; background: #f5f7fa; border-radius: 12px;">
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">状态</div>
+                        <div id="detail_status"></div>
+                    </div>
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">客户端ID</div>
+                        <div id="detail_clientid" style="font-size: 14px; color: #333;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">所属酒店</div>
+                        <div id="detail_hotel" style="font-size: 14px; color: #333;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">安装位置</div>
+                        <div id="detail_location" style="font-size: 14px; color: #333;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">WiFi网络</div>
+                        <div id="detail_wifi" style="font-size: 14px; color: #333;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">运行时长</div>
+                        <div id="detail_runtime" style="font-size: 14px; color: #333;">-</div>
+                    </div>
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">固件版本</div>
+                        <div id="detail_firmware" style="font-size: 14px; color: #333;">v2.1.3</div>
+                    </div>
+                    <div>
+                        <div style="color: #6b7280; font-size: 13px; margin-bottom: 4px;">最后在线</div>
+                        <div id="detail_lastonline" style="font-size: 14px; color: #333;">-</div>
+                    </div>
                 </div>
 
-                <div class="actions-row">
-                    <button class="action-btn primary" id="btnStart">▶ 启动录制</button>
-                    <button class="action-btn" id="btnStop">□ 停止录制</button>
-                    <button class="action-btn" id="btnRefresh">⟳ 刷新状态</button>
-                    <button class="action-btn" id="btnUpload">⤴ 上传配置</button>
+                <!-- 操作按钮行 -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="startRecordFromDetail()" id="detailBtnStart">▶ 启动录制</button>
+                    <button class="btn btn-secondary" onclick="stopRecordFromDetail()" id="detailBtnStop">⏹ 停止录制</button>
+                    <button class="btn btn-secondary" onclick="refreshDeviceDetail()">🔄 刷新状态</button>
+                    <button class="btn btn-secondary" onclick="uploadConfig()">📤 上传配置</button>
                 </div>
 
-                <div style="margin-top:14px;">
-                    <div class="tabs">
-                        <div class="tab active" data-tab="timeline">操作动态</div>
-                        <div class="tab" data-tab="files">文件列表</div>
+                <!-- 标签页 -->
+                <div style="display: flex; gap: 8px; background: #f5f7fa; padding: 6px; border-radius: 8px; margin-bottom: 16px;">
+                    <div class="tab active" onclick="switchDetailTab('timeline')" id="tab-timeline">📊 操作动态</div>
+                    <div class="tab" onclick="switchDetailTab('files')" id="tab-files">📁 文件列表</div>
+                </div>
+
+                <!-- 操作动态标签页内容 -->
+                <div id="timelineContent" style="max-height: 300px; overflow-y: auto;">
+                    <div id="timelineList"></div>
+                </div>
+
+                <!-- 文件列表标签页内容 -->
+                <div id="filesContent" style="display: none;">
+                    <div id="filesList"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('deviceDetailModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 开始录制模态框 -->
+    <div id="startRecordModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">▶️ 启动录制</div>
+                <button class="close-x" onclick="closeModal('startRecordModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">摄像头ID</label>
+                    <input type="text" id="recordCameraId" class="form-input" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">业务标识 (pre_name)</label>
+                    <input type="text" id="recordPreName" class="form-input" placeholder="例如：702房间、会议室A、停车场南门">
+                    <small style="color: #6b7280; font-size: 13px;">用于标识本次录制的业务场景，会作为视频文件名的一部分</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('startRecordModal')">取消</button>
+                <button class="btn btn-primary" onclick="confirmStartRecord()">确认启动</button>
+            </div>
+        </div>
                     </div>
 
-                    <div id="tabContent">
-                        <div id="timeline" class="timeline">
-                            <!-- timeline items -->
+    <!-- 视频列表模态框 -->
+    <div id="videoListModal" class="modal-overlay">
+        <div class="modal large">
+            <div class="modal-header">
+                <div class="modal-title">📁 视频文件列表 - <span id="videoListCameraId"></span></div>
+                <button class="close-x" onclick="closeModal('videoListModal')">✕</button>
                         </div>
-                        <div id="files" style="display:none; padding-top:8px;">
-                            <ul id="fileList" style="list-style:none;padding-left:6px;color:#334155"></ul>
+            <div class="modal-body">
+                <div style="margin-bottom: 16px; display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="queryVideoList()">🔄 刷新列表</button>
+                    <button class="btn btn-primary" onclick="showUploadModal()" id="btnSelectUpload" disabled>📤 上传选中的文件 (<span id="selectedCount">0</span>)</button>
                         </div>
+                <div id="videoListContent">
+                    <div style="text-align: center; padding: 40px; color: #6b7280;">
+                        <div class="loading" style="margin: 0 auto 10px;"></div>
+                        <div>加载视频列表中...</div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="action-btn" id="modalCloseBottom">关闭</button>
+                <button class="btn btn-secondary" onclick="closeModal('videoListModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上传确认模态框 -->
+    <div id="uploadConfirmModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">📤 确认上传</div>
+                <button class="close-x" onclick="closeModal('uploadConfirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 12px; color: #333;">确认上传以下 <strong id="uploadFileCount">0</strong> 个视频文件？</p>
+                <div id="uploadFileList" style="max-height: 200px; overflow: auto; background: #f5f7fa; padding: 12px; border-radius: 8px; font-size: 14px; color: #333;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('uploadConfirmModal')">取消</button>
+                <button class="btn btn-primary" onclick="confirmUpload()">确认上传</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 示例设备数据（与表格对应）
-        const deviceMap = {
-            'HW-2024-001': { status: '在线', clientid: 'CAM-1730985600000-ABC123', hotel: '北京希尔顿酒店', location: '大堂入口', wifi: 'Hotel-IoT-Network', runtime: '15天 8小时', fw: 'v2.1.3', lastonline: '10:45:59', files: ['video_20241107_140000.mp4'] },
-            'HW-2024-002': { status: '在线', clientid: 'CAM-1730985600001-DEF456', hotel: '北京希尔顿酒店', location: '电梯厅 - 2F', wifi: 'Hotel-IoT-Network', runtime: '15天 8小时', fw: 'v2.1.3', lastonline: '10:45:59', files: [] },
-            'HW-2024-003': { status: '离线', clientid: 'CAM-1730985600002-GHI789', hotel: '上海香格里拉酒店', location: '停车场入口', wifi: 'Hotel-Shanghai-IoT', runtime: '0天 0小时', fw: 'v2.0.9', lastonline: '07:46:00', files: [] },
-            'HW-2024-004': { status: '故障', clientid: 'CAM-1730985600003-JKL012', hotel: '广州万豪酒店', location: '餐厅区域', wifi: 'Hotel-GZ-IoT', runtime: '2天 3小时', fw: 'v2.1.2', lastonline: '06:46:00', files: [] },
-            'HW-2024-005': { status: '在线', clientid: 'CAM-1730985600004-MNO345', hotel: '深圳洲际酒店', location: '会议室走廊', wifi: 'Hotel-SZ-IoT', runtime: '30天 12小时', fw: 'v2.1.3', lastonline: '08:46:00', files: [] }
-        };
+        let currentCameraId = '';
+        let currentVideos = [];
+        let selectedVideos = new Set();
+        let uploadProgressInterval = null;
 
-        // helper to open modal and populate
-        function openDeviceModal(hardwareId) {
-            const d = deviceMap[hardwareId] || {};
-            document.getElementById('modalHardwareId').textContent = hardwareId;
-            document.getElementById('d_status').innerHTML = '<span class="status-tag '+(d.status==='在线'? 'status-online': d.status==='故障'? 'status-error':'status-offline')+'">'+(d.status||'-')+'</span>';
-            document.getElementById('d_clientid').textContent = d.clientid||'-';
-            document.getElementById('d_hotel').textContent = d.hotel||'-';
-            document.getElementById('d_location').textContent = d.location||'-';
-            document.getElementById('d_wifi').textContent = d.wifi||'-';
-            document.getElementById('d_runtime').textContent = d.runtime||'-';
-            document.getElementById('d_fw').textContent = d.fw||'-';
-            document.getElementById('d_lastonline').textContent = d.lastonline||'-';
-
-            // files
-            const fileList = document.getElementById('fileList');
-            fileList.innerHTML = '';
-            (d.files||[]).forEach(f => {
-                const li = document.createElement('li');
-                li.textContent = f;
-                fileList.appendChild(li);
-            });
-
-            // timeline sample
-            const timeline = document.getElementById('timeline');
-            timeline.innerHTML = '';
-            const now = new Date();
-            const sample = [
-                { type: 'refresh', title: '刷新状态', desc: '执行操作: 刷新状态', time: new Date(now.getTime()-60*1000) },
-                { type: 'heartbeat', title: '设备心跳', desc: '设备在线，状态正常', time: new Date(now.getTime()-120*1000) },
-                { type: 'upload', title: '文件上传', desc: '成功上传录像文件 video_20241107_140000.mp4', time: new Date(now.getTime()-360*1000) },
-                { type: 'cmd', title: '命令执行', desc: '执行命令: 启动录制', time: new Date(now.getTime()-600*1000) },
-                { type: 'fw', title: '固件更新', desc: '固件版本更新至 v2.1.3', time: new Date(now.getTime()-1200*1000) }
-            ];
-            sample.forEach(it => {
-                const div = document.createElement('div');
-                div.className = 'timeline-item';
-                const dot = document.createElement('span');
-                dot.className = 'dot ' + (it.type==='fw' ? 'blue' : 'green');
-                div.innerHTML = '<div style="font-weight:600;margin-bottom:6px;"><span class="dot '+(it.type==='fw' ? 'blue':'green')+'"></span>' + it.title + '</div><div style="color:#475569">' + it.desc + '</div>';
-                const timeSpan = document.createElement('div');
-                timeSpan.className = 'timeline-time';
-                timeSpan.textContent = it.time.toTimeString().slice(0,8);
-                div.appendChild(timeSpan);
-                timeline.appendChild(div);
-            });
-
-            // show modal
-            document.getElementById('modalOverlay').style.display = 'flex';
+        // 显示Toast消息
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         }
 
-        function closeModal() {
-            document.getElementById('modalOverlay').style.display = 'none';
+        // 模态框控制
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
         }
 
-        // bind row clicks (exclude clicks on buttons inside row)
-        document.querySelectorAll('.device-table tbody tr').forEach(row => {
-            row.addEventListener('click', (e) => {
-                if (e.target.closest('button')) return; // ignore icon button clicks
-                const hw = row.querySelector('td:nth-child(2)').textContent.trim();
-                openDeviceModal(hw);
-            });
-        });
-
-        // modal controls
-        document.getElementById('closeModal').addEventListener('click', closeModal);
-        document.getElementById('modalCloseBottom').addEventListener('click', closeModal);
-        document.getElementById('btnStart').addEventListener('click', () => {
-            // simulate adding timeline entry
-            prependTimelineEntry('cmd', '命令执行', '执行命令: 启动录制');
-        });
-        document.getElementById('btnStop').addEventListener('click', () => {
-            prependTimelineEntry('cmd', '命令执行', '执行命令: 停止录制');
-        });
-        document.getElementById('btnRefresh').addEventListener('click', () => {
-            prependTimelineEntry('refresh', '刷新状态', '执行操作: 刷新状态');
-        });
-        document.getElementById('btnUpload').addEventListener('click', () => {
-            prependTimelineEntry('upload', '文件上传', '成功上传配置文件 config.json');
-        });
-
-        function prependTimelineEntry(type, title, desc) {
-            const timeline = document.getElementById('timeline');
-            const div = document.createElement('div');
-            div.className = 'timeline-item';
-            const now = new Date();
-            div.innerHTML = '<div style="font-weight:600;margin-bottom:6px;"><span class="dot '+(type==='fw'?'blue':'green')+'"></span>' + title + '</div><div style="color:#475569">' + desc + '</div>';
-            const timeSpan = document.createElement('div');
-            timeSpan.className = 'timeline-time';
-            timeSpan.textContent = now.toTimeString().slice(0,8);
-            div.appendChild(timeSpan);
-            timeline.insertBefore(div, timeline.firstChild);
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
         }
 
-        // tabs
-        document.querySelectorAll('.tab').forEach(t => {
-            t.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-                t.classList.add('active');
-                const which = t.dataset.tab;
-                document.getElementById('timeline').style.display = which==='timeline' ? 'block' : 'none';
-                document.getElementById('files').style.display = which==='files' ? 'block' : 'none';
-            });
+        // 刷新设备列表
+        async function refreshDeviceList() {
+            try {
+                const response = await fetch('/api/camera/status/list');
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateDeviceTable(result.data);
+                    updateStatistics(result.data);
+                } else {
+                    showToast('获取设备列表失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching device list:', error);
+                showToast('网络错误，请检查连接', 'error');
+            }
+        }
+
+        // 更新统计数据
+        function updateStatistics(devices) {
+            const total = devices.length;
+            const online = devices.filter(d => d.status === 'online').length;
+            const offline = devices.filter(d => d.status === 'offline').length;
+            const recording = devices.filter(d => d.run_state === 'recording').length;
+            
+            document.getElementById('totalDevices').innerHTML = `${total} <span class="stat-icon">📷</span>`;
+            document.getElementById('onlineDevices').textContent = online;
+            document.getElementById('offlineDevices').textContent = offline;
+            document.getElementById('recordingDevices').textContent = recording;
+        }
+
+        // 存储设备数据
+        let devicesData = [];
+
+        // 更新设备表格
+        function updateDeviceTable(devices) {
+            devicesData = devices; // 保存设备数据
+            const tbody = document.getElementById('deviceTableBody');
+            
+            if (devices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">暂无设备数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = devices.map((device, index) => `
+                <tr onclick="openDeviceDetail('${device.camera_id}', event)">
+                    <td><span class="status-tag ${device.status === 'online' ? 'status-online' : 'status-offline'}">${device.status === 'online' ? '在线' : '离线'}</span></td>
+                    <td><span class="device-icon">📷</span>${device.camera_id}</td>
+                    <td><span class="status-tag ${device.run_state === 'recording' ? 'status-recording' : 'status-offline'}">${device.run_state === 'recording' ? '录制中' : device.run_state}</span></td>
+                    <td>${device.left_storage || 0} GB</td>
+                    <td>${Math.round((parseFloat(device.electric_percent) || 0) * 100)}%</td>
+                    <td>${device.network_signal_strength || 0} dBm</td>
+                    <td>${formatTime(device.last_update)}</td>
+                    <td onclick="event.stopPropagation()">
+                        <button class="icon-btn" title="启动录制" onclick="openStartRecordModal('${device.camera_id}')" ${device.run_state === 'recording' ? 'disabled' : ''}>▶</button>
+                        <button class="icon-btn" title="停止录制" onclick="stopRecord('${device.camera_id}')" ${device.run_state !== 'recording' ? 'disabled' : ''}>⏹</button>
+                        <button class="icon-btn" title="查看视频" onclick="openVideoListModal('${device.camera_id}')">📁</button>
+                        <button class="icon-btn" title="查看进度" onclick="openUploadProgressModal('${device.camera_id}')">📊</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 格式化时间
+        function formatTime(isoString) {
+            if (!isoString) return '-';
+            const date = new Date(isoString);
+            return `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+        }
+
+        // 1. 开始录制
+        function openStartRecordModal(cameraId) {
+            currentCameraId = cameraId;
+            document.getElementById('recordCameraId').value = cameraId;
+            document.getElementById('recordPreName').value = '';
+            openModal('startRecordModal');
+        }
+
+        async function confirmStartRecord() {
+            const preName = document.getElementById('recordPreName').value.trim();
+            
+            if (!preName) {
+                showToast('请输入业务标识', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/camera/${currentCameraId}/record/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pre_name: preName })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('录制启动命令已发送', 'success');
+                    closeModal('startRecordModal');
+                    setTimeout(refreshDeviceList, 1500);
+                } else {
+                    showToast(result.message || '启动失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error starting record:', error);
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // 2. 停止录制
+        async function stopRecord(cameraId) {
+            if (!confirm(`确认停止摄像头 ${cameraId} 的录制？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/camera/${cameraId}/record/stop`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})  // 发送空的 JSON 对象
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('录制停止命令已发送', 'success');
+                    setTimeout(refreshDeviceList, 1500);
+                } else {
+                    showToast(result.message || '停止失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error stopping record:', error);
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // 3. 查看视频列表
+        function openVideoListModal(cameraId) {
+            currentCameraId = cameraId;
+            selectedVideos.clear();
+            document.getElementById('videoListCameraId').textContent = cameraId;
+            document.getElementById('selectedCount').textContent = '0';
+            document.getElementById('btnSelectUpload').disabled = true;
+            openModal('videoListModal');
+            queryVideoList();
+        }
+
+        async function queryVideoList() {
+            const content = document.getElementById('videoListContent');
+            content.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;"><div class="loading" style="margin: 0 auto 10px;"></div><div>查询视频列表中...</div></div>';
+            
+            try {
+                // 先发送查询命令
+                const cmdResponse = await fetch(`/api/camera/${currentCameraId}/videos/list`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                const cmdResult = await cmdResponse.json();
+                
+                if (!cmdResult.success) {
+                    content.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff3b30;">查询失败：${cmdResult.message}</div>`;
+                    return;
+                }
+                
+                // 等待1秒后获取结果
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                const resultResponse = await fetch(`/api/videos/${cmdResult.request_id}`);
+                const result = await resultResponse.json();
+                
+                if (result.success && result.data.videos) {
+                    currentVideos = result.data.videos;
+                    renderVideoList(result.data.videos);
+                } else {
+                    content.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">暂无视频文件</div>';
+                }
+            } catch (error) {
+                console.error('Error querying videos:', error);
+                content.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff3b30;">网络错误：${error.message}</div>`;
+            }
+        }
+
+        function renderVideoList(videos) {
+            const content = document.getElementById('videoListContent');
+            
+            if (videos.length === 0) {
+                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">暂无视频文件</div>';
+                return;
+            }
+            
+            content.innerHTML = videos.map((video, index) => `
+                <div class="video-item" id="video-${index}">
+                    <div class="video-info">
+                        <div class="video-name">📹 ${video.file_name}</div>
+                        <div class="video-meta">
+                            开始时间: ${video.start_time} | 
+                            时长: ${video.duration}s | 
+                            大小: ${(video.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                    </div>
+                    <input type="checkbox" class="video-checkbox" onchange="toggleVideoSelection('${video.file_name}', ${index})">
+                </div>
+            `).join('');
+        }
+
+        function toggleVideoSelection(fileName, index) {
+            if (selectedVideos.has(fileName)) {
+                selectedVideos.delete(fileName);
+                document.getElementById(`video-${index}`).classList.remove('selected');
+            } else {
+                selectedVideos.add(fileName);
+                document.getElementById(`video-${index}`).classList.add('selected');
+            }
+            
+            document.getElementById('selectedCount').textContent = selectedVideos.size;
+            document.getElementById('btnSelectUpload').disabled = selectedVideos.size === 0;
+        }
+
+        // 4. 上传文件
+        function showUploadModal() {
+            if (selectedVideos.size === 0) {
+                showToast('请先选择要上传的视频', 'error');
+                return;
+            }
+            
+            document.getElementById('uploadFileCount').textContent = selectedVideos.size;
+            document.getElementById('uploadFileList').innerHTML = Array.from(selectedVideos).map(f => `<div style="margin: 4px 0;">📹 ${f}</div>`).join('');
+            openModal('uploadConfirmModal');
+        }
+
+        async function confirmUpload() {
+            const fileList = Array.from(selectedVideos);
+            
+            try {
+                const response = await fetch(`/api/camera/${currentCameraId}/videos/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_name_list: fileList })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(`上传命令已发送，共 ${fileList.length} 个文件`, 'success');
+                    closeModal('uploadConfirmModal');
+                    closeModal('videoListModal');
+                    
+                    // 开始监控上传进度
+                    startUploadProgressMonitor(currentCameraId);
+                } else {
+                    showToast(result.message || '上传失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error uploading files:', error);
+                showToast('网络错误', 'error');
+            }
+        }
+
+        // 查看上传进度
+        function openUploadProgressModal(cameraId) {
+            showToast('正在查询上传进度...', 'info');
+            fetchUploadProgress(cameraId);
+        }
+
+        async function fetchUploadProgress(cameraId) {
+            try {
+                const response = await fetch(`/api/camera/${cameraId}/videos/upload/status`);
+                const result = await response.json();
+                
+                if (result.success && Object.keys(result.progress).length > 0) {
+                    let message = `📊 ${cameraId} 上传进度：\n`;
+                    for (const [file, progress] of Object.entries(result.progress)) {
+                        message += `${file}: ${(progress * 100).toFixed(0)}%\n`;
+                    }
+                    alert(message);
+                } else {
+                    showToast('当前无上传任务', 'info');
+                }
+            } catch (error) {
+                console.error('Error fetching progress:', error);
+                showToast('查询失败', 'error');
+            }
+        }
+
+        function startUploadProgressMonitor(cameraId) {
+            if (uploadProgressInterval) {
+                clearInterval(uploadProgressInterval);
+            }
+            
+            uploadProgressInterval = setInterval(async () => {
+                const response = await fetch(`/api/camera/${cameraId}/videos/upload/status`);
+                const result = await response.json();
+                
+                if (result.success && Object.keys(result.progress).length > 0) {
+                    const allComplete = Object.values(result.progress).every(p => p >= 1.0);
+                    if (allComplete) {
+                        clearInterval(uploadProgressInterval);
+                        showToast('所有文件上传完成！', 'success');
+                    }
+                }
+            }, 3000);
+        }
+
+        // 页面加载时自动刷新
+        window.addEventListener('load', () => {
+            refreshDeviceList();
+            // 每30秒自动刷新一次
+            setInterval(refreshDeviceList, 30000);
         });
 
-        // close modal on overlay click outside dialog
-        document.getElementById('modalOverlay').addEventListener('click', (e) => {
-            if (e.target.id === 'modalOverlay') closeModal();
+        // ========== 设备详情模态框 ==========
+        let currentDetailDevice = null;
+        let detailTimeline = [];
+        let detailFiles = [];
+
+        // 打开设备详情
+        function openDeviceDetail(cameraId, event) {
+            // 如果点击的是按钮，不打开详情
+            if (event && event.target.closest('button')) {
+                return;
+            }
+            
+            currentCameraId = cameraId;
+            currentDetailDevice = devicesData.find(d => d.camera_id === cameraId);
+            
+            if (!currentDetailDevice) {
+                showToast('设备信息不存在', 'error');
+                return;
+            }
+            
+            // 填充设备信息
+            document.getElementById('detailCameraId').textContent = cameraId;
+            
+            const statusHtml = currentDetailDevice.status === 'online' 
+                ? '<span class="status-tag status-online">在线</span>' 
+                : '<span class="status-tag status-offline">离线</span>';
+            document.getElementById('detail_status').innerHTML = statusHtml;
+            
+            document.getElementById('detail_clientid').textContent = currentDetailDevice.client_id || '-';
+            document.getElementById('detail_hotel').textContent = currentDetailDevice.hotel || '-';
+            document.getElementById('detail_location').textContent = currentDetailDevice.location || '-';
+            document.getElementById('detail_wifi').textContent = currentDetailDevice.wifi || '-';
+            document.getElementById('detail_runtime').textContent = currentDetailDevice.runtime || '-';
+            document.getElementById('detail_lastonline').textContent = formatTime(currentDetailDevice.last_update);
+            
+            // 更新按钮状态
+            const isRecording = currentDetailDevice.run_state === 'recording';
+            document.getElementById('detailBtnStart').disabled = isRecording;
+            document.getElementById('detailBtnStop').disabled = !isRecording;
+            
+            // 加载时间线
+            loadDeviceTimeline(cameraId);
+            
+            // 切换到时间线标签
+            switchDetailTab('timeline');
+            
+            openModal('deviceDetailModal');
+        }
+
+        // 切换详情标签页
+        function switchDetailTab(tabName) {
+            // 更新标签按钮样式
+            document.getElementById('tab-timeline').classList.remove('active');
+            document.getElementById('tab-files').classList.remove('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // 显示对应内容
+            if (tabName === 'timeline') {
+                document.getElementById('timelineContent').style.display = 'block';
+                document.getElementById('filesContent').style.display = 'none';
+            } else if (tabName === 'files') {
+                document.getElementById('timelineContent').style.display = 'none';
+                document.getElementById('filesContent').style.display = 'block';
+                loadDeviceFiles(currentCameraId);
+            }
+        }
+
+        // 加载设备时间线（从tasks表获取真实数据）
+        async function loadDeviceTimeline(cameraId) {
+            const timelineList = document.getElementById('timelineList');
+            
+            // 显示加载中状态
+            timelineList.innerHTML = '<div style="text-align: center; padding: 20px; color: #6b7280;"><div class="loading" style="margin: 0 auto 10px;"></div><div>加载操作历史中...</div></div>';
+            
+            try {
+                // 从API获取操作历史
+                const response = await fetch(`/api/camera/${cameraId}/tasks?limit=50`);
+                const data = await response.json();
+                
+                if (!data.success || data.tasks.length === 0) {
+                    timelineList.innerHTML = '<div style="text-align: center; padding: 20px; color: #6b7280;">暂无操作记录</div>';
+                    return;
+                }
+                
+                // 转换tasks数据为时间线格式
+                const timeline = data.tasks.map(task => {
+                    const item = {
+                        requestid: task.requestid,
+                        requesttype: task.requesttype,
+                        state: task.state,
+                        description: task.description,
+                        created_at: task.created_at,
+                        updated_at: task.updated_at
+                    };
+                    
+                    // 根据操作类型确定标题
+                    const typeLabels = {
+                        'start_record': '🔴 开始录制',
+                        'stop_record': '⏹️ 停止录制',
+                        'list_videos': '📹 查询文件',
+                        'upload_file': '⬆️ 上传文件',
+                        'get_upload_status': '📊 查询进度',
+                        'get_status': '💓 设备状态'
+                    };
+                    item.title = typeLabels[task.requesttype] || '📌 设备操作';
+                    
+                    // 根据状态确定样式
+                    if (task.state === 'success') {
+                        item.class = 'success';
+                        item.dot = 'green';
+                        item.stateIcon = '✅';
+                    } else if (task.state === 'failed') {
+                        item.class = 'error';
+                        item.dot = 'red';
+                        item.stateIcon = '❌';
+                    } else if (task.state === 'calling') {
+                        item.class = 'info';
+                        item.dot = 'blue';
+                        item.stateIcon = '⏳';
+                    } else {
+                        item.class = 'info';
+                        item.dot = 'gray';
+                        item.stateIcon = '•';
+                    }
+                    
+                    return item;
+                });
+                
+                // 渲染时间线
+                timelineList.innerHTML = timeline.map(item => `
+                    <div class="timeline-item ${item.class}">
+                        <div class="timeline-title">
+                            <span class="timeline-dot ${item.dot}"></span>
+                            ${item.title}
+                        </div>
+                        <div class="timeline-desc">
+                            ${item.stateIcon} ${item.description}
+                        </div>
+                        <div class="timeline-time">${formatTimeShort(new Date(item.created_at))}</div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('加载操作历史失败:', error);
+                timelineList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff3b30;">加载失败，请重试</div>';
+            }
+        }
+
+        // 加载设备文件列表
+        async function loadDeviceFiles(cameraId) {
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = '<div style="text-align: center; padding: 20px; color: #6b7280;"><div class="loading" style="margin: 0 auto 10px;"></div><div>加载文件列表中...</div></div>';
+            
+            try {
+                // 查询视频列表
+                const cmdResponse = await fetch(`/api/camera/${cameraId}/videos/list`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                const cmdResult = await cmdResponse.json();
+                if (!cmdResult.success) {
+                    filesList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff3b30;">加载失败</div>';
+                    return;
+                }
+                
+                // 等待结果
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                const resultResponse = await fetch(`/api/videos/${cmdResult.request_id}`);
+                const result = await resultResponse.json();
+                
+                if (result.success && result.data.videos && result.data.videos.length > 0) {
+                    renderDetailFiles(result.data.videos);
+                } else {
+                    filesList.innerHTML = '<div style="text-align: center; padding: 40px; color: #6b7280;">暂无文件</div>';
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                filesList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff3b30;">加载失败</div>';
+            }
+        }
+
+        // 渲染详情文件列表
+        function renderDetailFiles(files) {
+            const filesList = document.getElementById('filesList');
+            
+            filesList.innerHTML = files.map(file => {
+                const isVideo = file.file_name.endsWith('.mp4');
+                const icon = isVideo ? '🎬' : '📄';
+                const fileType = isVideo ? '视频' : '文件';
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                
+                return `
+                    <div class="file-item">
+                        <div style="display: flex; align-items: center; flex: 1;">
+                            <div class="file-icon">${icon}</div>
+                            <div class="file-info">
+                                <div class="file-name">${file.file_name}</div>
+                                <div class="file-meta">${fileType} · ${fileSize} MB · ${file.start_time}</div>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="下载" onclick="downloadFile('${file.file_name}')">⬇️</button>
+                            <button class="file-action-btn" title="删除" onclick="deleteFile('${file.file_name}')" style="color: #ff3b30;">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 格式化短时间
+        function formatTimeShort(date) {
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        // 从详情模态框启动录制
+        function startRecordFromDetail() {
+            closeModal('deviceDetailModal');
+            openStartRecordModal(currentCameraId);
+        }
+
+        // 从详情模态框停止录制
+        async function stopRecordFromDetail() {
+            if (!confirm(`确认停止摄像头 ${currentCameraId} 的录制？`)) {
+                return;
+            }
+            
+            await stopRecord(currentCameraId);
+            closeModal('deviceDetailModal');
+        }
+
+        // 刷新设备详情
+        async function refreshDeviceDetail() {
+            showToast('正在刷新设备状态...', 'info');
+            await refreshDeviceList();
+            
+            // 重新加载详情
+            setTimeout(() => {
+                openDeviceDetail(currentCameraId, { target: {} });
+            }, 1000);
+        }
+
+        // 上传配置
+        function uploadConfig() {
+            showToast('上传配置功能开发中...', 'info');
+        }
+
+        // 下载文件
+        function downloadFile(fileName) {
+            showToast(`开始下载文件: ${fileName}`, 'info');
+            // 实际应该调用下载API
+        }
+
+        // 删除文件
+        function deleteFile(fileName) {
+            if (confirm(`确认删除文件 ${fileName}？`)) {
+                showToast(`文件删除功能开发中...`, 'info');
+                // 实际应该调用删除API
+            }
+        }
+
+        // 关闭模态框快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal('startRecordModal');
+                closeModal('videoListModal');
+                closeModal('uploadConfirmModal');
+                closeModal('deviceDetailModal');
+            }
         });
     </script>
-
 </body>
 </html>

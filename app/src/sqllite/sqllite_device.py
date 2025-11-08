@@ -45,6 +45,7 @@ def init_db(db_path: Path = DB_PATH) -> None:
 		cols = {r['name'] for r in cur.fetchall()}
 		extras = {
 			'status': 'TEXT',
+			'run_state': 'TEXT',
 			'left_storage': 'INTEGER',
 			'electric_percent': 'INTEGER',
 			'network_signal_strength': 'INTEGER'
@@ -80,6 +81,8 @@ def insert_device(data: Dict[str, Any], db_path: Path = DB_PATH) -> int:
 		patch = {}
 		if 'status' in data:
 			patch['status'] = data['status']
+		if 'run_state' in data:
+			patch['run_state'] = data['run_state']
 		if 'left_storage' in data:
 			patch['left_storage'] = data['left_storage']
 		if 'electric_percent' in data:
@@ -103,6 +106,24 @@ def get_device(hardware_id: str, db_path: Path = DB_PATH) -> Optional[Dict[str, 
 		return dict(row) if row else None
 
 
+def get_device_by_client_id(client_id: str, db_path: Path = DB_PATH) -> Optional[Dict[str, Any]]:
+	"""通过client_id查询设备"""
+	sql = "SELECT * FROM devices WHERE client_id = ?"
+	with get_connection(db_path) as conn:
+		cur = conn.execute(sql, (client_id,))
+		row = cur.fetchone()
+		return dict(row) if row else None
+
+
+def get_client_id_by_hardware_id(hardware_id: str, db_path: Path = DB_PATH) -> Optional[str]:
+	"""通过hardware_id获取client_id"""
+	sql = "SELECT client_id FROM devices WHERE hardware_id = ?"
+	with get_connection(db_path) as conn:
+		cur = conn.execute(sql, (hardware_id,))
+		row = cur.fetchone()
+		return row['client_id'] if row else None
+
+
 def list_devices(limit: int = 100, db_path: Path = DB_PATH) -> List[Dict[str, Any]]:
 	sql = "SELECT * FROM devices ORDER BY id DESC LIMIT ?"
 	with get_connection(db_path) as conn:
@@ -112,7 +133,7 @@ def list_devices(limit: int = 100, db_path: Path = DB_PATH) -> List[Dict[str, An
 
 def update_device(hardware_id: str, patch: Dict[str, Any], db_path: Path = DB_PATH) -> int:
 	"""Update device fields. Returns number of rows updated."""
-	allowed = ['client_id', 'hotel', 'location', 'wifi', 'runtime', 'fw', 'last_online', 'status', 'left_storage', 'electric_percent', 'network_signal_strength']
+	allowed = ['client_id', 'hotel', 'location', 'wifi', 'runtime', 'fw', 'last_online', 'status', 'run_state', 'left_storage', 'electric_percent', 'network_signal_strength']
 	sets = []
 	params = {}
 	for k, v in patch.items():
