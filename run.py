@@ -12,4 +12,4 @@ if __name__ == "__main__":
         mqtt_thread.start()
     # --- 后台线程启动mqtt消费者 ---
 
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5001)
