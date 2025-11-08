@@ -24,4 +24,4 @@ if __name__ == "__main__":
         print("✅ 摄像头状态监听器已在后台启动")
     # --- 后台线程启动状态监听器 ---
 
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=8080)

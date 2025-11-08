@@ -148,14 +148,12 @@ def update_device(hardware_id: str, patch: Dict[str, Any], db_path: Path = DB_PA
 		cur = conn.execute(sql, params)
 		return cur.rowcount
 
-
 def delete_device(hardware_id: str, db_path: Path = DB_PATH) -> int:
 	sql = "DELETE FROM devices WHERE hardware_id = ?"
 	with get_connection(db_path) as conn:
 		cur = conn.execute(sql, (hardware_id,))
 		return cur.rowcount
-
-
+	
 if __name__ == '__main__':
 	# small demo when run as script
 	print('Initializing DB at', DB_PATH)
