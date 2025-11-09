@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request
+import json
 import requests
 from requests.auth import HTTPBasicAuth
 from app.src.monitor_cam import device_status_manager
@@ -55,6 +56,29 @@ def home():
 @main.route('/camera_config')
 def camera_config():
     return render_template('camera_config.html')
+
+
+@main.route('/api/generate_config', methods=['POST'])
+def generate_config():
+    """Generate a configuration payload from form data and return it as JSON."""
+    payload = {}
+    if request.is_json:
+        payload = request.get_json()
+    else:
+        payload = request.form.to_dict()
+
+    config = {
+        'hardware_id': payload.get('hardware_id'),
+        'hotel_name': payload.get('hotel_name'),
+        'location': payload.get('location'),
+        'wifi': {
+            'ssid': payload.get('wifi_ssid'),
+            'password': payload.get('wifi_password')
+        }
+    }
+
+    # Return pretty-printed JSON string
+    return jsonify({'ok': True, 'config': json.dumps(config, ensure_ascii=False, indent=2)})
 
 @main.route('/device_manage')
 def device_manage():
