@@ -85,6 +85,11 @@ def register():
                 "username": "camlink_c_1",
                 "password": "camlink_c_1",
                 "tls_enabled": False
+            },
+            "ota_info": {
+                "download_url": "https://api.your-platform.com/v1/devices/upload_url",
+                "firmware_version": "1.0.0",
+                "update": "1" 
             }
         }
     }
