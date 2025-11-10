@@ -63,7 +63,7 @@
         document.getElementById('configForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const form = this;
-            const data = Object.fromEntries(new FormData(form));
+            let data = Object.fromEntries(new FormData(form));
             const preview = document.getElementById('previewCard');
             preview.innerHTML = `<div style='font-size:24px;color:#1976d2;margin-bottom:12px;'>生成中...</div>`;
 
@@ -73,9 +73,31 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                if (!resp.ok) throw new Error('Server error ' + resp.status);
                 const result = await resp.json();
-                if (!result.ok) throw new Error('Generation failed');
+                if (!resp.ok) {
+                    // handle conflict when hardware_id exists
+                    if (resp.status === 409 && result && result.exists) {
+                        const ok = confirm('硬件识别编号已存在，是否覆盖？');
+                        if (!ok) {
+                            preview.innerHTML = `<div style='color:#b00020;'>已取消覆盖。</div>`;
+                            return;
+                        }
+                        // send again with force flag
+                        data.force = true;
+                        const resp2 = await fetch('/api/generate_config', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        if (!resp2.ok) throw new Error('Server error ' + resp2.status);
+                        const result2 = await resp2.json();
+                        if (!result2.ok) throw new Error('Generation failed');
+                        // use result2 below
+                        result.config = result2.config;
+                    } else {
+                        throw new Error('Server error ' + resp.status);
+                    }
+                }
 
                 const configText = result.config;
 

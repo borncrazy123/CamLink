@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, jsonify, request
 import json
 import requests
+import hashlib
 from requests.auth import HTTPBasicAuth
 from app.src.monitor_cam import device_status_manager
 from app.src.mqtt.mqtt_publisher import mqtt_publisher
 from app.src.record_control import command_response_manager
 from app.src.video_manage import video_list_manager, upload_progress_manager
-from app.src.sqllite import list_devices, get_device, update_device, list_tasks, get_client_id_by_hardware_id
+from app.src.sqllite import list_devices, get_device, update_device, insert_device, list_tasks, get_client_id_by_hardware_id, delete_device
+import sqlite3
 
 main = Blueprint('main', __name__)
 
@@ -67,8 +69,16 @@ def generate_config():
     else:
         payload = request.form.to_dict()
 
+    hardware_id = payload.get('hardware_id')
+    if not hardware_id:
+        return jsonify({'ok': False, 'message': 'hardware_id is required'}), 400
+
+    # generate client_id as CAM- + first 12 chars of md5(hardware_id)
+    client_id = 'CAM-' + hashlib.md5(hardware_id.encode('utf-8')).hexdigest()[:12]
+
     config = {
-        'hardware_id': payload.get('hardware_id'),
+        'hardware_id': hardware_id,
+        'client_id': client_id,
         'hotel_name': payload.get('hotel_name'),
         'location': payload.get('location'),
         'wifi': {
@@ -76,6 +86,39 @@ def generate_config():
             'password': payload.get('wifi_password')
         }
     }
+
+    # Persist to DB unless client asks for preview only
+    hardware_id = payload.get('hardware_id')
+    # prepare device row data
+    device_row = {
+        'hardware_id': hardware_id,
+        'client_id': client_id,
+        'hotel': payload.get('hotel_name'),
+        'location': payload.get('location'),
+        'wifi': payload.get('wifi_ssid'),
+        'runtime': payload.get('runtime'),
+        'fw': payload.get('fw'),
+        'last_online': payload.get('last_online')
+    }
+
+    force = False
+    # support force flag in JSON or form
+    if 'force' in payload:
+        v = payload.get('force')
+        if isinstance(v, bool):
+            force = v
+        elif isinstance(v, str) and v.lower() in ('1', 'true', 'yes'):
+            force = True
+    print('-------->:',device_row)
+    try:
+        if force:
+            # overwrite existing
+            update_device(hardware_id, {k: v for k, v in device_row.items() if k != 'hardware_id' and v is not None})
+        else:
+            # try insert; will raise IntegrityError if exists
+            insert_device(device_row)
+    except sqlite3.IntegrityError:
+        return jsonify({'ok': False, 'exists': True, 'message': 'hardware_id already exists'}), 409
 
     # Return pretty-printed JSON string
     return jsonify({'ok': True, 'config': json.dumps(config, ensure_ascii=False, indent=2)})
@@ -298,6 +341,26 @@ def get_camera_status_list():
             'message': f'获取设备列表失败: {str(e)}',
             'data': []
         }), 500
+
+
+@main.route('/api/device/<camera_id>', methods=['DELETE'])
+def delete_device_api(camera_id):
+    """
+    删除设备记录（通过 hardware_id）
+    返回: { success: true } 或 404/500
+    """
+    try:
+        # 使用 sqlite helper 删除
+        removed = delete_device(camera_id)
+        if removed and removed > 0:
+            return jsonify({'success': True, 'message': f'设备 {camera_id} 已删除'})
+        else:
+            return jsonify({'success': False, 'message': f'未找到设备: {camera_id}'}), 404
+    except Exception as e:
+        print(f"❌ 删除设备失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'删除失败: {str(e)}'}), 500
 
 
 # ==================== 录制控制接口 ====================

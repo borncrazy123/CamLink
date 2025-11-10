@@ -230,6 +230,7 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="deleteDeviceFromDetail()" style="background:#ff3b30;color:#fff;border:none;">删除设备</button>
                 <button class="btn btn-secondary" onclick="closeModal('deviceDetailModal')">关闭</button>
             </div>
         </div>
@@ -386,6 +387,7 @@
                         <button class="icon-btn" title="停止录制" onclick="stopRecord('${device.camera_id}')" ${device.run_state !== 'recording' ? 'disabled' : ''}>⏹</button>
                         <button class="icon-btn" title="查看视频" onclick="openVideoListModal('${device.camera_id}')">📁</button>
                         <button class="icon-btn" title="查看进度" onclick="openUploadProgressModal('${device.camera_id}')">📊</button>
+                        <button class="icon-btn" title="删除设备" onclick="confirmDeleteDevice('${device.camera_id}')" style="color: #ff3b30;">🗑️</button>
                     </td>
                 </tr>
             `).join('');
@@ -889,6 +891,50 @@
         // 上传配置
         function uploadConfig() {
             showToast('上传配置功能开发中...', 'info');
+        }
+
+        // 删除设备 - 在表格行中使用的确认入口
+        function confirmDeleteDevice(cameraId) {
+            if (!confirm(`确认删除设备 ${cameraId}？此操作不可恢复。`)) {
+                return;
+            }
+            deleteDevice(cameraId);
+        }
+
+        // 从详情模态框触发删除
+        function deleteDeviceFromDetail() {
+            if (!currentCameraId) {
+                showToast('未选定设备', 'error');
+                return;
+            }
+            if (!confirm(`确认删除设备 ${currentCameraId}？此操作不可恢复。`)) {
+                return;
+            }
+            deleteDevice(currentCameraId);
+        }
+
+        // 调用后端删除 API
+        async function deleteDevice(cameraId) {
+            try {
+                const resp = await fetch(`/api/device/${cameraId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await resp.json().catch(() => ({ success: resp.ok }));
+
+                if (resp.ok && result.success !== false) {
+                    showToast(`设备 ${cameraId} 已删除`, 'success');
+                    closeModal('deviceDetailModal');
+                    setTimeout(refreshDeviceList, 800);
+                } else {
+                    const msg = result.message || `删除设备失败（状态码 ${resp.status}）`;
+                    showToast(msg, 'error');
+                }
+            } catch (err) {
+                console.error('删除设备失败:', err);
+                showToast('网络错误，删除失败', 'error');
+            }
         }
 
         // 下载文件
