@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-DB_PATH = Path(__file__).resolve().parents[2] / 'camlink.db'
+DB_PATH = Path(__file__).resolve().parents[3] / 'camlink.db'
 
 
 def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:

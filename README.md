@@ -42,6 +42,11 @@ pip install -r requirements.txt
 python run.py
 ```
 
+### 4. 服务器上运行应用
+```bash
+nohup python3 run.py > /root/canvas/log/run.log 2>&1 &
+```
+
 启动后，访问 http://localhost:5000 即可查看应用。
 
 ## 开发
