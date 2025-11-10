@@ -23,8 +23,8 @@ def init_task_table(db_path: Path = DB_PATH) -> None:
 		requesttype TEXT,
 		state TEXT,
 		description TEXT,
-		created_at TEXT DEFAULT (datetime('now')),
-		updated_at TEXT
+		created_at TEXT DEFAULT (datetime('now', 'localtime')),
+		updated_at TEXT DEFAULT (datetime('now', 'localtime'))
 	);
 	"""
 	db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -44,8 +44,8 @@ def create_task(data: Dict[str, Any], db_path: Path = DB_PATH) -> int:
 	Optional: requesttype, state, description
 	"""
 	sql = """
-	INSERT INTO tasks (clientid, requestid, requesttype, state, description, updated_at)
-	VALUES (:clientid, :requestid, :requesttype, :state, :description, :updated_at)
+	INSERT INTO tasks (clientid, requestid, requesttype, state, description)
+	VALUES (:clientid, :requestid, :requesttype, :state, :description)
 	"""
 	with get_connection(db_path) as conn:
 		cur = conn.execute(sql, {
@@ -53,8 +53,7 @@ def create_task(data: Dict[str, Any], db_path: Path = DB_PATH) -> int:
 			'requestid': data['requestid'],
 			'requesttype': data.get('requesttype'),
 			'state': data.get('state'),
-			'description': data.get('description'),
-			'updated_at': data.get('updated_at')
+			'description': data.get('description')
 		})
 		return cur.lastrowid
 
@@ -113,8 +112,7 @@ if __name__ == '__main__':
 		'requestid': 'REQ-0001',
 		'requesttype': 'start_record',
 		'state': 'calling',
-		'description': '启动录制命令已下发',
-		'updated_at': '2025-11-08 10:00:00'
+		'description': '启动录制命令已下发'
 	})
 	print('Inserted task id:', tid)
 	print('Listing tasks:')

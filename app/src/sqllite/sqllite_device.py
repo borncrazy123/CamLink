@@ -1,6 +1,7 @@
 import sqlite3
 from typing import Optional, List, Dict, Any
 from pathlib import Path
+from datetime import datetime
 
 
 DB_PATH = Path(__file__).resolve().parents[2] / 'camlink.db'
@@ -167,7 +168,7 @@ if __name__ == '__main__':
 		'wifi': 'Hotel-IoT-Network',
 		'runtime': '15天 8小时',
 		'fw': 'v2.1.3',
-		'last_online': '2025-11-08 08:46:00',
+		'last_online': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
 		'status': '在线',
 		'left_storage': 4096,
 		'electric_percent': 80,
