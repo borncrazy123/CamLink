@@ -387,8 +387,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # 设置环境变量中的访问密钥ID和访问密钥Secret
-    os.environ["OSS_ACCESS_KEY_ID"] = "LTAI5tBUrUgVo2CCdmY4gqTb"
-    os.environ["OSS_ACCESS_KEY_SECRET"] = "3P2K7qnwGcYKJGGClEYrYbvnGdOXzy"    
+    os.environ["OSS_ACCESS_KEY_ID"] = ""
+    os.environ["OSS_ACCESS_KEY_SECRET"] = ""    
 
     # main()  # 脚本入口点，控制程序流程从这里开始
 
