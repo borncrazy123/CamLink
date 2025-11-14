@@ -9,6 +9,7 @@ from app.src.record_control import command_response_manager
 from app.src.video_manage import video_list_manager, upload_progress_manager
 from app.src.sqllite import list_devices, get_device, update_device, insert_device, list_tasks, get_client_id_by_hardware_id, delete_device
 import sqlite3
+from app.src.oss.oss_manager import getMultipartUploadPresignUrls, confirmCompleteMultipartUpload
 
 main = Blueprint('main', __name__)
 
@@ -188,6 +189,77 @@ def login():
                 "update": "1" 
             }
         }
+    }
+    return ret
+
+@main.route('/v1/devices/getMulUploadUrls', methods=['POST'])
+def getMulUploadUrls():
+    # 获取文件分片上传地址列表
+    # {
+    # "client_id": "CLK_123456789",
+    # "fileName": "vid_001.mp4",
+    # "partNumber": 2
+    # }
+
+    payload = {}
+    if request.is_json:
+        payload = request.get_json()
+    else:
+        payload = request.form.to_dict()
+
+    clientId = payload.get('client_id')
+    partNumber = payload.get('partNumber')
+    filename = payload.get('fileName')
+
+    # 获取分片上传预签名URLs
+    presignUrls = getMultipartUploadPresignUrls(bucket='camlink', key=clientId + '/' + filename, part_number=partNumber)
+    print("upload_id from getMultipartUploadPresignUrls():", presignUrls)
+    upload_id = presignUrls["upload_id"]
+
+    # 模拟返回登录成功响应
+    ret = {
+        "result": "success",
+        "message": "",
+        "data": {
+            "uploadId": upload_id,
+            "presignUrls": presignUrls["upload_parts"]
+        }
+    }
+    return ret
+
+@main.route('/v1/devices/confirmCmplMulUpload', methods=['POST'])
+def confirmCmplMulUpload():
+    # 获取文件分片上传完成校验
+    # {
+    #     "client_id": "CLK_123456789",
+    #     "fileName": "vid_001.mp4",
+    #     "uploadId": "DE304FF9AD8641E68FC9332E47113B50",
+    #     "etagList": [{
+    #         "partNumber": 1,
+    #         "etag": "1EC0FCA281C9D4D4E1EFFA85972ACF14"
+    #     }, {
+    #         "partNumber": 2,
+    #         "etag": "7F44980A40B0C1FB750ADB2F312E3C81"
+    #     }]
+    # }
+
+    payload = {}
+    if request.is_json:
+        payload = request.get_json()
+    else:
+        payload = request.form.to_dict()    
+    clientId = payload.get('client_id')
+    filename = payload.get('fileName')
+    uploadId = payload.get('uploadId')
+    etagList = payload.get('etagList')
+
+    # 发送完成多部分上传请求
+    confirmCompleteMultipartUpload(bucket='camlink', key=clientId + '/' + filename, upload_id=uploadId, upload_parts=etagList) 
+
+    # 模拟返回登录成功响应
+    ret = {
+        "result": "success",
+        "message": ""
     }
     return ret
 
