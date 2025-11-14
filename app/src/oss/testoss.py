@@ -230,7 +230,7 @@ def test1(bucket, key, part_number=2):
 
     return return_value
 
-def test2(upload_id, upload_parts):
+def test2(bucket, key, upload_id, upload_parts):
     # 获取client对象
     client = getOssClient()
 
@@ -240,18 +240,18 @@ def test2(upload_id, upload_parts):
     # upload_id = "12272E556B084ED9A02542009CCCCC49"
 
     # 要传入etag 和 part_number 列表
-    upload_parts = []
-    for partNumber, eTag in upload_parts:
+    oss_upload_parts = []
+    for part_info in upload_parts:
         # 记录每个部分的ETag和编号
-        upload_parts.append(oss.UploadPart(part_number=partNumber, etag=eTag))
+        oss_upload_parts.append(oss.UploadPart(part_number=part_info["partNumber"], etag=part_info["eTag"]))
 
     # 按照部分编号排序
-    parts = sorted(upload_parts, key=lambda p: p.part_number)
+    parts = sorted(oss_upload_parts, key=lambda p: p.part_number)
 
     # 完成多部分上传请求
     request = oss.CompleteMultipartUploadRequest(
-        bucket=args.bucket,
-        key=args.key,
+        bucket=bucket,
+        key=key,
         upload_id=upload_id,
         complete_multipart_upload=oss.CompleteMultipartUpload(
             parts=parts
@@ -310,7 +310,7 @@ def split_number(n, k):
     parts.sort(reverse=True)  # 确保最后一份最小
     return parts
 
-def testPost(presignUrls):
+def testPost(presignUrls, file_path):
     presignUrls_upload_parts = presignUrls["upload_parts"]
     print("presignUrls_upload_parts.size():", len(presignUrls_upload_parts))
     # 分块大小为1MB
@@ -318,7 +318,7 @@ def testPost(presignUrls):
     # part_size = 512 * 512
 
     # 获取文件大小
-    data_size = os.path.getsize(args.file_path)
+    data_size = os.path.getsize(file_path)
     print("data_size:", data_size)
 
     # 获取每份大小的最小整数
@@ -395,9 +395,9 @@ if __name__ == "__main__":
     presignUrls = test1(args.bucket, args.key, 1)
     print("upload_id from test1():", presignUrls)
 
-    upload_parts = testPost(presignUrls)
+    upload_parts = testPost(presignUrls, args.file_path)
     print("upload_parts from testPost():", upload_parts)
 
     # 传入 upload_id 和 对应的 part_number 和 etag 列表
     upload_id = presignUrls["upload_id"]
-    test2(upload_id, upload_parts)
+    test2(args.bucket, args.key, upload_id, upload_parts)
