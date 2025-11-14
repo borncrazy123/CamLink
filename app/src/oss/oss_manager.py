@@ -1,6 +1,6 @@
 import os
 import requests
-import alibabacloud_oss_v2 as oss
+# import alibabacloud_oss_v2 as oss
 
 def getOssClient():
     # 设置环境变量中的访问密钥ID和访问密钥Secret
