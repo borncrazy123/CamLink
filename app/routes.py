@@ -209,10 +209,12 @@ def getMulUploadUrls():
 
     clientId = payload.get('client_id')
     partNumber = payload.get('partNumber')
-    filename = payload.get('fileName')
+    fileName = payload.get('fileName')
+    key = f"{clientId}/{fileName}"
+    print("key for upload:", key)
 
     # 获取分片上传预签名URLs
-    presignUrls = getMultipartUploadPresignUrls(bucket='camlink', key=clientId + '/' + filename, part_number=partNumber)
+    presignUrls = getMultipartUploadPresignUrls(bucket='camlink', key=key, part_number=partNumber)
     print("upload_id from getMultipartUploadPresignUrls():", presignUrls)
     upload_id = presignUrls["upload_id"]
 
