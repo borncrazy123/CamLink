@@ -252,12 +252,14 @@ def confirmCmplMulUpload():
     else:
         payload = request.form.to_dict()    
     clientId = payload.get('client_id')
-    filename = payload.get('fileName')
+    fileName = payload.get('fileName')
     uploadId = payload.get('uploadId')
     etagList = payload.get('etagList')
+    key = f"{clientId}/{fileName}"
+    print("key for upload:", key)
 
     # 发送完成多部分上传请求
-    confirmCompleteMultipartUpload(bucket='camlink', key=clientId + '/' + filename, upload_id=uploadId, upload_parts=etagList) 
+    confirmCompleteMultipartUpload(bucket='camlink', key=key, upload_id=uploadId, upload_parts=etagList) 
 
     # 模拟返回登录成功响应
     ret = {
