@@ -237,3 +237,35 @@ if __name__ == "__main__":
     upload_id = presignUrls["upload_id"]
     # 发送完成多部分上传请求
     confirmCompleteMultipartUpload(bucket, key, upload_id, upload_parts)
+
+
+# ---------------------------- CURL 示例代码 ----------------------------
+# 发起分片请求：
+# curl -X POST "http://121.36.170.241:8080/v1/devices/getMulUploadUrls" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "client_id": "CAM-05d0d59b9d3d",
+#     "fileName": "test1212.mov",
+#     "partNumber": 2
+#   }'
+
+# 发起分片完成校验：
+# curl -X POST "http://121.36.170.241:8080/v1/devices/confirmCmplMulUpload" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#   "client_id": "CAM-05d0d59b9d3d",
+#   "fileName": "test1212.mov",
+#   "uploadId": "C566F3B59F5B4AC7B59810C78B991304",
+#   "etagList": [
+#     {
+#       "partNumber": 1,
+#       "etag": "8C9437F6C534C0C2C1D837AF06CD9724"
+#     },
+#     {
+#       "partNumber": 2,
+#       "etag": "02DA1BD8B6BFA5C5223714FF4869D90B"
+#     }
+#   ]
+# }'
+# 
+# 注意：以上 CURL 示例中的 URL 和数据仅供参考，请根据实际情况进行调整。
