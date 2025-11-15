@@ -138,88 +138,11 @@ def confirmCompleteMultipartUpload(bucket, key, upload_id, upload_parts):
     for key, value in complete_pre_result.signed_headers.items():
         print(f'------>>>>signed headers key: {key}, signed headers value: {value}')
 
-def split_number(n, k):
-    """
-    将整数 n 平均分成 k 份，如果不能整除，则让最后一份小一点
-    返回一个长度为 k 的整数列表
-    """
-    if k <= 0:
-        raise ValueError("份数 k 必须大于 0")
-
-    base = n // k
-    remainder = n % k
-
-    # 前 (k - 1) 份尽量多分，最后一份最小
-    parts = [base + 1 if i < remainder else base for i in range(k)]
-    parts.sort(reverse=True)  # 确保最后一份最小
-    return parts
-
-def testPost(presignUrls_upload_parts, file_path):
-    # presignUrls_upload_parts = presignUrls["upload_parts"]
-    print("presignUrls_upload_parts.size():", len(presignUrls_upload_parts))
-    # 分块大小为1MB
-    # part_size = 1024 * 1024
-    # part_size = 512 * 512
-
-    # 获取文件大小
-    data_size = os.path.getsize(file_path)
-    print("data_size:", data_size)
-
-    # 获取每份大小的最小整数
-    part_number = len(presignUrls_upload_parts)
-
-    upload_parts = []
-
-    split_numbers = split_number(data_size, part_number)
-    print("split_numbers:", split_numbers)
-
-    # 打开文件进行读取
-    with open(file_path, 'rb') as f:
-
-        start = 0
-        for i in range(len(split_numbers)):
-            print("i:", i)
-            print("start:", start)
-            n = split_numbers[i]
-            print("n:", n)
-
-            up_pre_result_url = presignUrls_upload_parts[i]["uploadUrl"]            
-            reader = oss.io_utils.SectionReader(oss.io_utils.ReadAtReader(f), start, n)
-
-            # 上传分块数据
-            print("up_pre_result.url:", up_pre_result_url)
-            with requests.put(up_pre_result_url, data=reader) as up_result:
-                print(f'status code: {up_result.status_code},'
-                        f' request id: {up_result.headers.get("x-oss-request-id")},'
-                        f' part number: {i + 1},'
-                        f' hash crc64: {up_result.headers.get("x-oss-hash-crc64ecma")},'
-                        f' content md5: {up_result.headers.get("Content-MD5")},'
-                        f' etag: {up_result.headers.get("ETag")},'
-                        f' server time: {up_result.headers.get("x-oss-server-time")}'
-                )
-
-                print('-'*90)
-                print('up_result.headers.get("ETag"):', up_result.headers.get("ETag"))
-
-                # 记录每个部分的ETag和编号
-                upload_parts.append({
-                    "partNumber": i + 1,
-                    "eTag": up_result.headers.get("ETag")
-                })
-
-                print('upload_parts:', upload_parts)
-                print('-'*90)
-
-            # 移动文件指针到下一个分块的起始位置
-            start = start + n
-
-    return upload_parts
-
 # 当此脚本被直接执行时，调用main函数开始处理逻辑
 if __name__ == "__main__":
-    # 定义存储桶名称和对象键
-    bucket = 'camlink'
-    key = 'cc_test_3/test-presign-multipart-upload-img111.png'
+    # # 定义存储桶名称和对象键
+    # bucket = 'camlink'
+    # key = 'cc_test_3/test-presign-multipart-upload-img111.png'
 
     # # 调用 getMultipartUploadPresignUrls 函数生成预签名的多部分上传请求
     # presignUrls = getMultipartUploadPresignUrls(bucket, key, 3)
@@ -236,3 +159,5 @@ if __name__ == "__main__":
     # upload_id = presignUrls["upload_id"]
     # # 发送完成多部分上传请求
     # confirmCompleteMultipartUpload(bucket, key, upload_id, upload_parts)
+
+    pass
