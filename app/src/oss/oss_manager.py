@@ -87,7 +87,8 @@ def confirmCompleteMultipartUpload(bucket, key, upload_id, upload_parts):
     oss_upload_parts = []
     for part_info in upload_parts:
         # 记录每个部分的ETag和编号
-        oss_upload_parts.append(oss.UploadPart(part_number=part_info["partNumber"], etag=part_info["eTag"]))
+        print("part_info:", part_info["partNumber"], part_info["etag"])
+        oss_upload_parts.append(oss.UploadPart(part_number=part_info["partNumber"], etag=part_info["etag"]))
 
     # 按照部分编号排序
     parts = sorted(oss_upload_parts, key=lambda p: p.part_number)
