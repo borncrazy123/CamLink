@@ -211,38 +211,21 @@ def getMulUploadUrls():
     partNumber = payload.get('partNumber')
     filename = payload.get('fileName')
 
-    # # 获取分片上传预签名URLs
-    # presignUrls = getMultipartUploadPresignUrls(bucket='camlink', key=clientId + '/' + filename, part_number=partNumber)
-    # print("upload_id from getMultipartUploadPresignUrls():", presignUrls)
-    # upload_id = presignUrls["upload_id"]
+    # 获取分片上传预签名URLs
+    presignUrls = getMultipartUploadPresignUrls(bucket='camlink', key=clientId + '/' + filename, part_number=partNumber)
+    print("upload_id from getMultipartUploadPresignUrls():", presignUrls)
+    upload_id = presignUrls["upload_id"]
 
-    # # 模拟返回登录成功响应
-    # ret = {
-    #     "result": "success",
-    #     "message": "",
-    #     "data": {
-    #         "uploadId": upload_id,
-    #         "presignUrls": presignUrls["upload_parts"]
-    #     }
-    # }
-
+    # 模拟返回登录成功响应
     ret = {
-        "data": {
-            "presignUrls": [
-            {
-                "partNumber": 1,
-                "uploadUrl": "https://camlink.oss-cn-beijing.aliyuncs.com/CLK_123456789/vid_001.mp4?partNumber=1&uploadId=68C709CCEE5641A2B3971F30C4B33A40&x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20251114T160658Z&x-oss-expires=900&x-oss-credential=LTAI5tQjLu88Vir63jSSCGWb%2F20251114%2Fcn-beijing%2Foss%2Faliyun_v4_request&x-oss-signature=4de54e34c302fa76b015bec0fb0a22f5975bd39903047472400deacdddc59b15"
-            },
-            {
-                "partNumber": 2,
-                "uploadUrl": "https://camlink.oss-cn-beijing.aliyuncs.com/CLK_123456789/vid_001.mp4?partNumber=2&uploadId=68C709CCEE5641A2B3971F30C4B33A40&x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20251114T160658Z&x-oss-expires=900&x-oss-credential=LTAI5tQjLu88Vir63jSSCGWb%2F20251114%2Fcn-beijing%2Foss%2Faliyun_v4_request&x-oss-signature=292d3036ecbd6a9ca1c97873a1ceaf725bb3c9593a73bb3d2fbd3f50d3f14bca"
-            }
-            ],
-            "uploadId": "68C709CCEE5641A2B3971F30C4B33A40"
-        },
+        "result": "success",
         "message": "",
-        "result": "success"
+        "data": {
+            "uploadId": upload_id,
+            "presignUrls": presignUrls["upload_parts"]
+        }
     }
+
     return ret
 
 @main.route('/v1/devices/confirmCmplMulUpload', methods=['POST'])
@@ -272,7 +255,7 @@ def confirmCmplMulUpload():
     etagList = payload.get('etagList')
 
     # 发送完成多部分上传请求
-    # confirmCompleteMultipartUpload(bucket='camlink', key=clientId + '/' + filename, upload_id=uploadId, upload_parts=etagList) 
+    confirmCompleteMultipartUpload(bucket='camlink', key=clientId + '/' + filename, upload_id=uploadId, upload_parts=etagList) 
 
     # 模拟返回登录成功响应
     ret = {
