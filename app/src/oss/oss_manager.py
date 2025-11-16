@@ -1,11 +1,15 @@
 import os
 import requests
 import alibabacloud_oss_v2 as oss
+from dotenv import load_dotenv
 
 def getOssClient():
-    # 设置环境变量中的访问密钥ID和访问密钥Secret
-    os.environ["OSS_ACCESS_KEY_ID"] = "LTAI5tQjLu88Vir63jSSCGWb"
-    os.environ["OSS_ACCESS_KEY_SECRET"] = "IZ15bnWhCUUvbTPmVIldTxXG32vMBX" 
+    # 从 .env 文件加载环境变量
+    load_dotenv()
+
+    # # 设置环境变量中的访问密钥ID和访问密钥Secret
+    # print('os.environ["OSS_ACCESS_KEY_ID"]:', os.environ.get("OSS_ACCESS_KEY_ID"))
+    # print('os.environ["OSS_ACCESS_KEY_SECRET"]:', os.environ.get("OSS_ACCESS_KEY_SECRET"))
 
     # 从命令行参数获取区域和endpoint
     region = 'cn-beijing'
