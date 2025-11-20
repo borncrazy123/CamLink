@@ -8,6 +8,7 @@ from app.src.mqtt.mqtt_publisher import mqtt_publisher
 from app.src.record_control import command_response_manager
 from app.src.video_manage import video_list_manager, upload_progress_manager
 from app.src.sqllite import list_devices, get_device, update_device, insert_device, list_tasks, get_client_id_by_hardware_id, delete_device
+from app.src.spy_blocker.spy import lookup_macs_from_string
 import sqlite3
 from app.src.oss.oss_manager import getMultipartUploadPresignUrls, confirmCompleteMultipartUpload
 
@@ -438,6 +439,42 @@ def delete_device_api(camera_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'删除失败: {str(e)}'}), 500
+
+
+@main.route('/api/spy/lookup', methods=['GET', 'POST'])
+def spy_lookup_api():
+    """
+    Lookup MAC addresses against mac.json prefixes (first 4 bytes).
+
+    Accepts:
+      - POST JSON: { "macs": "F4-E1-FC-01-02-09,F4-EA-B5-F1-21-C2" }
+      - POST form data: macs=...
+      - GET query: /api/spy/lookup?macs=...
+
+    Returns:
+      { success: true, count: N, matches: [ {mac,prefix,value}, ... ] }
+    """
+    try:
+        macs = None
+        if request.method == 'POST':
+            if request.is_json:
+                data = request.get_json(silent=True) or {}
+                macs = data.get('macs')
+            else:
+                macs = request.form.get('macs')
+        else:
+            macs = request.args.get('macs')
+
+        if not macs:
+            return jsonify({'success': False, 'message': '缺少参数: macs'}), 400
+
+        results = lookup_macs_from_string(macs)
+        return jsonify({'success': True, 'count': len(results), 'matches': results})
+    except Exception as e:
+        print(f"❌ spy lookup failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'内部错误: {str(e)}'}), 500
 
 
 # ==================== 录制控制接口 ====================
