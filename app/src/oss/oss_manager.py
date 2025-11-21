@@ -2,6 +2,7 @@ import os
 import requests
 import alibabacloud_oss_v2 as oss
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 def getOssClient():
     # 从 .env 文件加载环境变量
@@ -72,7 +73,7 @@ def getMultipartUploadPresignUrls(bucket, key, part_number):
                 key=key,
                 upload_id=obj.upload_id,
                 part_number=partNumber,
-            ))
+            ), expires=timedelta(minutes=5*24*60))
             # print("up_pre_result.url:", up_pre_result.url)
             return_value["upload_parts"].append({
                     "partNumber": partNumber,
