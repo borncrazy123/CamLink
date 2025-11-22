@@ -133,50 +133,32 @@ def device_manage():
 def hello():
     return "Hello, World!"
 
-# @main.route('/v1/devices/register', methods=['POST'])
-# def register():
-#     # 模拟设备注册请求
-#     # {
-#     # # "client_id": "CLK_123456789",//最好用设备表面条码
-#     # # "device_secret": "a_very_long_and_secret_factory_key",//可以考虑去掉
-#     # # "model": "CAM-PRO-4K",//可以写死
-#     # # "firmware_version": "1.0.0" //设备自动读取本身的版本号
-#     # }
-
-#     # 模拟返回注册成功响应
-#     ret = {
-#         "result": "success",
-#         "data": {
-#             "client_id": "CLK_123456789",
-#             "mqtt_broker": {
-#                 "host": "121.36.170.241",
-#                 "port": 1883,
-#                 "username": "camlink_c_1",
-#                 "password": "camlink_c_1",
-#                 "tls_enabled": False
-#             },
-#             "ota_info": {
-#                 "download_url": "https://api.your-platform.com/v1/devices/upload_url",
-#                 "firmware_version": "1.0.0",
-#                 "update": "1" 
-#             }
-#         }
-#     }
-#     return ret
-
 @main.route('/v1/devices/login', methods=['POST'])
 def login():
     # 模拟设备登录请求
     # {
-    #     "client_id": "CLK_123456789",
-    #     "firmware_version": "1.0.0"
+    # "client_id": "CLK_123456789",
+    # "serial_number": "ABCDEF46CDRFJHK673F",//最好用设备表面条码
+    # "model": "CAM-PRO-4K",//可以写死
+    # "firmware_version": "1.0.0" //设备自动读取本身的版本号
     # }
+
+    payload = {}
+    if request.is_json:
+        payload = request.get_json()
+    else:
+        payload = request.form.to_dict()
+    
+    clientId = payload.get('client_id')
+    # serialNumber = payload.get('serial_number')
+    # model = payload.get('model')
+    # firmwareVersion = payload.get('firmware_version')
 
     # 模拟返回登录成功响应
     ret = {
         "result": "success",
         "data": {
-            "client_id": "CLK_123456789",
+            "client_id": clientId,
             "mqtt_broker": {
                 "host": "121.36.170.241",
                 "port": 1883,
