@@ -133,7 +133,7 @@ def device_manage():
 def hello():
     return "Hello, World!"
 
-@main.route('/v1/devices/register')
+@main.route('/v1/devices/register', methods=['POST'])
 def register():
     # 模拟设备注册请求
     # {
@@ -164,7 +164,7 @@ def register():
     }
     return ret
 
-@main.route('/v1/devices/login')
+@main.route('/v1/devices/login', methods=['POST'])
 def login():
     # 模拟设备登录请求
     # {
