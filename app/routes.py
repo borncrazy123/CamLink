@@ -167,7 +167,7 @@ def login():
                 "tls_enabled": False
             },
             "ota_info": {
-                "download_url": "https://121.36.170.241:4443/static/ota/EP7.BRN",
+                "download_url": "https://camlink.oss-cn-beijing.aliyuncs.com/ota/1.0.0/EP7.BRN?Expires=1763833084&OSSAccessKeyId=TMP.3KqRs2q6ijAdddGNBYexM6CKaZQZ6eEjZmVSdbVPLhMWF3pVkfSqTjMXGAs5WnrZLU7aVBsJubkzcxkTMVqY8TEN7E9Czw&Signature=E9SeawNF4VeTggjVaawLobCmWE0%3D",
                 "firmware_version": "1.0.0",
                 "update": "1" 
             }
